@@ -1,0 +1,4 @@
+.env
+MySSHkey
+MySSHkey.pub
+node_modules
