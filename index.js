@@ -18,3 +18,59 @@ log4js.configure({
         default: {appenders: ['everything'], level: 'debug'},
     },
 });
+
+const logger = log4js.getLogger('[twiBot]');
+
+async function runTasks(account) {
+    const actionPage = await account.gotoActionAccount(`${TWITTER_TARGET_ACCOUNT}${nameAccount}`);
+    console.log(`Twitter target account: ${TWITTER_TARGET_ACCOUNT}${nameAccount}`);
+    await account.handlePost(actionPage);
+    //TODO: add another tasks for account
+    return account;
+}
+
+async function initialize(data) {
+    let rows = data.split('\n');
+    // TODO: async operations with Promise.allSettled
+    const accounts = rows.map((row) => new Account(row, nameAccount, duration, logger));
+    for (let account of accounts) {
+        await runTasks(account);
+    }
+}
+
+async function launching() {
+    try {
+        logger.info('TargetAccount: ' + nameAccount);
+        logger.info('Day count: ' + duration);
+        const data = fs.readFileSync('files/data', 'utf8');
+        await initialize(data);
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+async function setTargetAccountAndDuration() {
+    try {
+        console.log('Enter target account and how mach covers days via space: ' + '\n');
+        let readData = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout,
+            prompt: '>',
+        });
+        await readData.prompt();
+        await readData.on('line', async (input) => {
+            if (!!input) {
+                input = input.split(' ');
+                nameAccount = input[0];
+                duration = input[1];
+            }
+            await readData.close();
+        });
+        await sleep(10000);
+        await launching();
+    } catch (err) {
+        console.log(`Getting data from console err: ${err.message}`);
+    }
+}
+
+setTargetAccountAndDuration();
